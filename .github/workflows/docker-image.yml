@@ -18,10 +18,10 @@ jobs:
     
     - uses: azure/docker-login@v1
       with:
-        login-server: ${{ secret.ACR_LOGIN_SERVER }}
+        login-server: ${{ secrets.ACR_LOGIN_SERVER }}
         username: ${{ secrets.ACR_USERNAME }}
         password: ${{ secrets.ACR_PASSWORD }}
 
     - run: |
-        docker build . --file WebApp/Dockerfile -t ${{ secret.ACR_LOGIN_SERVER }}/password-manager-server:dev
-        docker push ${{ secret.ACR_LOGIN_SERVER }}/password-manager-server:dev
+        docker build . --file WebApp/Dockerfile -t ${{ secrets.ACR_LOGIN_SERVER }}/password-manager-server:dev
+        docker push ${{ secrets.ACR_LOGIN_SERVER }}/password-manager-server:dev
