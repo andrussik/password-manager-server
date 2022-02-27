@@ -21,17 +21,17 @@ dotnet run
 ## Database migrations
 **List migrations**
 ```shell
-dotnet ef migrations list --startup-project WebApp --project Db
+dotnet ef migrations list --startup-project WebApp --project Infrastructure
 ```
 
 **Create new migration**
 ```shell
-dotnet ef migrations add Y --startup-project WebApp --project Db -o Migrations
+dotnet ef migrations add migration_name --startup-project WebApp --project Db -o Infrastructure
 ```
 
 **Generate SQL script from migration X to migration Y**
 ```shell
-dotnet ef migrations script X Y -i --startup-project WebApp --project Db -o DbUp/Scripts
+dotnet ef migrations script previous_migration new_migration -i --startup-project WebApp --project Infrastructure -o DbUp/Scripts
 ```
 
 **Run script that does migration and generates SQL script.**
