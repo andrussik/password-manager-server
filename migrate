@@ -1,0 +1,27 @@
+#!/bin/sh
+
+set -e
+
+DIR=$(dirname "$0")
+MIGRATION_NAME="$1"
+PREVIOUS_MIGRATION=$(ls $DIR/Infrastructure/Db/Migrations | sort -nr | head -1 | sed -e '/DbContextModelSnapshot/d' |  sed -e 's/\..*$//')
+
+echo "Adding new migration '$MIGRATION_NAME'..."
+
+eval "dotnet ef migrations add $MIGRATION_NAME --startup-project $DIR/WebApp --project $DIR/Infrastructure -o Db/Migrations"
+
+echo "Finished adding migration '$MIGRATION_NAME'."
+
+NEW_MIGRATION=$(ls $DIR/Infrastructure/Db/Migrations | sort -nr | head -1 | sed -e '/DbContextModelSnapshot/d' | sed -e 's/\..*$//')
+
+if [[ -z "$PREVIOUS_MIGRATION" ]]
+then
+    echo "Generating inital database SQL script into DbUp/Scripts directory"
+    eval "dotnet ef migrations script -i --startup-project $DIR/WebApp --project $DIR/Infrastructure -o $DIR/DbUp/Scripts/$NEW_MIGRATION.sql"
+else
+    echo "Generating SQL script into DbUp/Scripts directory from migration '$PREVIOUS_MIGRATION' to '$NEW_MIGRATION'..."
+    eval "dotnet ef migrations script $PREVIOUS_MIGRATION $NEW_MIGRATION -i \
+    --startup-project $DIR/WebApp --project $DIR/Infrastructure -o $DIR/DbUp/Scripts/$NEW_MIGRATION.sql"
+fi
+
+echo "Finished generating sql script."
