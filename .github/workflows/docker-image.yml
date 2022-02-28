@@ -10,15 +10,24 @@ jobs:
   dev-build-and-deploy:
     runs-on: ubuntu-latest
     environment: dev
+    
     steps:
-    - uses: actions/checkout@v2
-    - uses: azure/docker-login@v1
+    - name: checkout
+      uses: actions/checkout@v2
+    
+    - name: docker login
+      uses: azure/docker-login@v1
       with:
         login-server: ${{ secrets.ACR_LOGIN_SERVER }}
         username: ${{ secrets.ACR_USERNAME }}
         password: ${{ secrets.ACR_PASSWORD }}
-    - run: |
-        docker build . --file DbUp/Dockerfile -t dbup --build-arg PASSWORD_MANAGER_DB='${{ secrets.PASSWORD_MANAGER_DB }}'
-    - run: |
+        
+    - name: DbUp
+      run: |
+        docker build . --file DbUp/Dockerfile -t dbup
+        docker run dbup '${{ secrets.PASSWORD_MANAGER_DB }}'
+    
+    - name: docker build and push
+      run: |
         docker build . --file WebApp/Dockerfile -t ${{ secrets.ACR_LOGIN_SERVER }}/password-manager-server:dev
         docker push ${{ secrets.ACR_LOGIN_SERVER }}/password-manager-server:dev

@@ -14,8 +14,14 @@ var upgrader = DeployChanges.To
 
 if (upgrader.IsUpgradeRequired())
 {
-    var y = upgrader.GetScriptsToExecute();
+    var scripts = upgrader.GetScriptsToExecute();
+    
     Console.WriteLine("Upgrade required. Executing following scripts: ");
-    y.ForEach(x => Console.WriteLine(x.Name));
-    upgrader.PerformUpgrade();
+    
+    scripts.ForEach(x => Console.WriteLine(x.Name));
+    
+    var result = upgrader.PerformUpgrade();
+
+    if (!result.Successful)
+        throw result.Error;
 }

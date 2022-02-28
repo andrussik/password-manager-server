@@ -15,10 +15,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Utilities\Utilities.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
       <PackageReference Include="dbup-core" Version="4.5.0" />
       <PackageReference Include="dbup-sqlserver" Version="4.5.0" />
     </ItemGroup>
