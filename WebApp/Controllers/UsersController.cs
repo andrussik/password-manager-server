@@ -14,6 +14,7 @@ public class UsersController : BaseController
         _userService = userService;
     }
 
+    [HttpGet]
     public async Task<ActionResult<User>> Get()
         => Ok(new UserDto(await _userService.Get(GetUserId())));
 }
