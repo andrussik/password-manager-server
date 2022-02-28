@@ -18,8 +18,8 @@ jobs:
         username: ${{ secrets.ACR_USERNAME }}
         password: ${{ secrets.ACR_PASSWORD }}
     - run: |
-        docker build . --file DbUp/Dockerfile -t DbUp --build-arg PASSWORD_MANAGER_DB=${{ secrets.PASSWORD_MANAGER_DB }}
-        docker run DbUp
+        docker build . --file DbUp/Dockerfile -t dbup --build-arg PASSWORD_MANAGER_DB='${{ secrets.PASSWORD_MANAGER_DB }}'
+        docker run dbup
     - run: |
         docker build . --file WebApp/Dockerfile -t ${{ secrets.ACR_LOGIN_SERVER }}/password-manager-server:dev
         docker push ${{ secrets.ACR_LOGIN_SERVER }}/password-manager-server:dev
