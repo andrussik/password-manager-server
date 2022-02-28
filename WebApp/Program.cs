@@ -12,19 +12,19 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("CorsAllowAll", policy => policy
-        .SetIsOriginAllowed(_ => true)
-        .AllowAnyOrigin()
+    options.AddPolicy("CorsPolicy", policy => policy
+        .WithOrigins("*")
         .AllowAnyHeader()
         .AllowAnyMethod()
-        .WithExposedHeaders("content-disposition")
     );
 });
+
 builder.Services.AddControllers(options =>
 {
     options.Conventions.Add(new RouteTokenTransformerConvention(new SlugifyParameterTransformer()));
     options.Filters.Add<ExceptionFilter>();
 });
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -44,15 +44,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddCoreServices();
 
+
 var app = builder.Build();
 
-app.UseCors("CorsAllowAll");
 app.UseDeveloperExceptionPage();
 
 app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
+
+app.UseCors("CorsPolicy");
 
 app.UseRouting();
 
