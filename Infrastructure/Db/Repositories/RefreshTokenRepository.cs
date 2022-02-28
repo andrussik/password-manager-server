@@ -8,5 +8,5 @@ public class RefreshTokenRepository : BaseRepository<RefreshToken>, IRefreshToke
 {
     public RefreshTokenRepository(AppDbContext dbContext) : base(dbContext) { }
 
-    public async Task<bool> Exists(string token) => await DbContext.RefreshTokens.AnyAsync(x => x.Token == token);
+    public async Task<bool> Exists(string token) => await DbSet.AnyAsync(x => x.Token == token);
 }

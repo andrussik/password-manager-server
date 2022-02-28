@@ -10,6 +10,7 @@ public class AppDbContext : DbContext
     public DbSet<GroupUser> GroupUsers { get; set; } = default!;
     public DbSet<Secret> Secrets { get; set; } = default!;
     public DbSet<User> Users { get; set; } = default!;
+    public DbSet<GroupInvitation> GroupInvitations { get; set; } = default!;
     public DbSet<RefreshToken> RefreshTokens { get; set; } = default!;
 
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
