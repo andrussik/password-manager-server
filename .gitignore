@@ -5,7 +5,6 @@ Thumbs.db
 Desktop.ini
 *.suo
 *.user
-*.sql
 .vs/
 [Bb]in/
 [Oo]bj/
