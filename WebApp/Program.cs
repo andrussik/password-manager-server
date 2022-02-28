@@ -13,9 +13,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsAllowAll", policy => policy
+        .SetIsOriginAllowed(_ => true)
         .AllowAnyOrigin()
         .AllowAnyHeader()
         .AllowAnyMethod()
+        .WithExposedHeaders("content-disposition")
     );
 });
 builder.Services.AddControllers(options =>
