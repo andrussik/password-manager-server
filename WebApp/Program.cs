@@ -46,12 +46,13 @@ builder.Services.AddCoreServices();
 
 var app = builder.Build();
 
+app.UseCors("CorsAllowAll");
+app.UseDeveloperExceptionPage();
+
 app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
-
-app.UseCors("CorsAllowAll");
 
 app.UseRouting();
 
