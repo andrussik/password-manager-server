@@ -1,4 +1,6 @@
-﻿FROM mcr.microsoft.com/dotnet/runtime:6.0 AS base
+﻿ARG PASSWORD_MANAGER_DB
+
+FROM mcr.microsoft.com/dotnet/runtime:6.0 AS base
 WORKDIR /app
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
@@ -15,4 +17,4 @@ RUN dotnet publish "DbUp.csproj" -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "DbUp.dll"]
+RUN dotnet "DbUp.dll" $PASSWORD_MANAGER_DB
