@@ -16,6 +16,10 @@ public class GroupsController : BaseController
     [HttpPost]
     public async Task<UserGroupDto> Save(GroupDto group)
         => new((await _groupService.Create(group.Name, GetUserId())).GroupUsers!.First());
+    
+    [HttpPost("update/name")]
+    public async Task UpdateName(GroupDto groupDto)
+        => await _groupService.UpdateName(groupDto.Id, groupDto.Name, GetUserId());
 
     [HttpDelete]
     [Route("{id:Guid}")]
