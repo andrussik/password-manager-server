@@ -232,13 +232,13 @@ namespace Infrastructure.Db.Migrations
                     b.HasOne("Domain.Entities.User", "InvitedByUser")
                         .WithMany()
                         .HasForeignKey("InvitedByUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Domain.Entities.User", "InvitedUser")
                         .WithMany()
                         .HasForeignKey("InvitedUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("InvitedByUser");
@@ -251,19 +251,19 @@ namespace Infrastructure.Db.Migrations
                     b.HasOne("Domain.Entities.Group", "Group")
                         .WithMany("GroupUsers")
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Domain.Entities.GroupRole", "GroupRole")
                         .WithMany()
                         .HasForeignKey("GroupRoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Domain.Entities.User", "User")
                         .WithMany("GroupUsers")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Group");
@@ -278,7 +278,7 @@ namespace Infrastructure.Db.Migrations
                     b.HasOne("Domain.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -288,11 +288,13 @@ namespace Infrastructure.Db.Migrations
                 {
                     b.HasOne("Domain.Entities.Group", "Group")
                         .WithMany("Secrets")
-                        .HasForeignKey("GroupId");
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Domain.Entities.User", "User")
                         .WithMany("Secrets")
-                        .HasForeignKey("UserId");
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Group");
 

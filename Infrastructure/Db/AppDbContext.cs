@@ -19,6 +19,11 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        foreach (var relationship in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys()))
+        {
+            relationship.DeleteBehavior = DeleteBehavior.Restrict;
+        }
+
         modelBuilder.Entity<GroupRole>()
             .HasData(GroupRole.Admin, GroupRole.Owner, GroupRole.Writer, GroupRole.Reader);
     }
