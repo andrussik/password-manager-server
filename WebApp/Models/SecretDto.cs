@@ -6,10 +6,10 @@ namespace WebApp.Models;
 public class SecretDto
 {
     public Guid Id { get; set; }
-    [MaxLength(1024)] public string Name { get; set; } = default!;
-
-    [MaxLength(1024)] public string? Username { get; set; }
+    public string Name { get; set; } = default!;
+    public string? Username { get; set; }
     public string? Password { get; set; }
+    public string? Description { get; set; }
 
     public Guid? UserId { get; set; }
 
@@ -23,6 +23,7 @@ public class SecretDto
         Name = secret.Name;
         Username = secret.Username;
         Password = secret.Password;
+        Description = secret.Description;
         UserId = secret.UserId;
         GroupId = secret.GroupId;
     }
