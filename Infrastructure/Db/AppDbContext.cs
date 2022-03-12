@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<User> Users { get; set; } = default!;
     public DbSet<GroupInvitation> GroupInvitations { get; set; } = default!;
     public DbSet<RefreshToken> RefreshTokens { get; set; } = default!;
+    public DbSet<Setting> Settings { get; set; } = default!;
 
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 

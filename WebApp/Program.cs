@@ -1,14 +1,19 @@
 using System.Text;
 using Core;
 using Infrastructure;
+using Infrastructure.Db;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Utilities;
 using WebApp.Filters;
 using WebApp.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Configuration.AddEfConfiguration(options =>
+    options.UseSqlServer(builder.Configuration[ConfigurationKeys.PASSWORD_MANAGER_DB]));
 
 builder.Services.AddCors(options =>
 {
