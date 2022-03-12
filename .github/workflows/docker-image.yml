@@ -31,3 +31,4 @@ jobs:
       run: |
         docker build . --file WebApp/Dockerfile -t ${{ secrets.ACR_LOGIN_SERVER }}/password-manager-server:dev
         docker push ${{ secrets.ACR_LOGIN_SERVER }}/password-manager-server:dev
+        docker push ${{ secrets.PI_REGISTRY_SERVER }}/password-manager-server:dev
