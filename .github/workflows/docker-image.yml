@@ -24,6 +24,13 @@ jobs:
         username: ${{ secrets.ACR_USERNAME }}
         password: ${{ secrets.ACR_PASSWORD }}
         
+    - name: private docker login
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ secrets.PI_REGISTRY_SERVER }}
+        username: ${{ secrets.PI_REGISTRY_SERVER_USER }}
+        password: ${{ secrets.PI_REGISTRY_SERVER_PASSWORD }}
+        
     - name: DbUp
       run: |
         docker build . --file DbUp/Dockerfile -t dbup
