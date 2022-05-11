@@ -43,3 +43,7 @@ jobs:
           -t ${{ secrets.PI_REGISTRY_SERVER }}/password-manager-server:dev
         docker push ${{ secrets.ACR_LOGIN_SERVER }}/password-manager-server:dev
         docker push ${{ secrets.PI_REGISTRY_SERVER }}/password-manager-server:dev
+
+    - name: webhook
+      run: |
+        curl -X POST -H 'Content-Type: application/json'  -d '{}' ${{ secrets.WEBHOOK_URL }}
