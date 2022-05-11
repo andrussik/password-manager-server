@@ -7,7 +7,15 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="6.0.2" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="6.0.4" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Utilities\Utilities.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="Entities\Log.cs" />
     </ItemGroup>
 
 </Project>

@@ -1,31 +1,27 @@
-using Core.Data;
-using Core.Data.Repositories;
-using Core.Services.Interfaces;
+using Core.Interfaces;
 using Domain.Entities;
 using Domain.Exceptions;
+using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Utilities;
 
 namespace Core.Services;
 
 public class GroupService : IGroupService
 {
-    private readonly IGroupRepository _groupRepository;
-    private readonly IGroupUserRepository _groupUserRepository;
-    private readonly ISecretRepository _secretRepository;
     private readonly IUnitOfWork _uow;
+    private readonly IUserService _userService;
+    private readonly ILogger<GroupService> _log;
 
-    public GroupService(
-        IGroupRepository groupRepository,
-        IGroupUserRepository groupUserRepository,
-        ISecretRepository secretRepository,
-        IUnitOfWork uow)
+    public GroupService(IUnitOfWork uow, IUserService userService, ILogger<GroupService> log)
     {
-        _groupRepository = groupRepository;
-        _groupUserRepository = groupUserRepository;
-        _secretRepository = secretRepository;
         _uow = uow;
+        _userService = userService;
+        _log = log;
     }
 
-    public async Task<Group> Create(string name, Guid userId)
+    public async Task<Group> Create(string name)
     {
         var group = new Group
         {
@@ -35,70 +31,86 @@ public class GroupService : IGroupService
 
         var groupOwner = new GroupUser
         {
-            UserId = userId,
+            UserId = _userService.CurrentUserId,
             GroupRoleId = GroupRole.Owner.Id
         };
 
         group.GroupUsers = new List<GroupUser> { groupOwner };
 
-        _groupRepository.Update(group);
-        await _uow.SaveChanges();
+        _uow.Groups.Update(group);
+        await _uow.SaveChangesAsync();
 
         return group;
     }
 
-    public async Task UpdateName(Guid id, string name, Guid userId)
+    public async Task Update(Guid id, JsonPatchDocument<Group> patchDocument)
     {
-        var group = await _groupRepository.FirstOrDefault(x => x.Id == id);
+        var group = await _uow.Groups.FirstOrDefaultAsync(x => x.Id == id);
 
-        await Validate(group, userId);
-        await ValidateOwnership(group!.Id, userId);
+        if (group is null)
+            throw new GroupException(RK.ERR_MSG_ENTITY_NOT_FOUND);
 
-        group.Name = name;
+        var groupUser = await _uow.GroupUsers.FirstOrDefaultAsync(x =>
+            x.GroupId == group.Id && x.UserId == _userService.CurrentUserId);
 
-        await _uow.SaveChanges();
+        if (groupUser is null)
+            throw new GroupPermissionException();
+
+        foreach (var operation in patchDocument.Operations)
+        {
+            if (!operation.path.Equals(nameof(Group.Name), StringComparison.OrdinalIgnoreCase))
+                throw new GroupPermissionException();
+
+            if (operation.path.Equals(nameof(Group.Name), StringComparison.OrdinalIgnoreCase) 
+                && !groupUser.UpdateNameAllowed())
+                throw new GroupPermissionException();
+        }
+
+        patchDocument.ApplyTo(group);
+
+        await _uow.SaveChangesAsync();
     }
 
-    public async Task Delete(Guid id, Guid userId)
+    public async Task Delete(Guid id)
     {
-        var group = await _groupRepository.FirstOrDefault(x => x.Id == id);
+        var group = await _uow.Groups.FirstOrDefaultAsync(x => x.Id == id);
 
-        await Validate(group, userId);
-        await ValidateOwnership(group!.Id, userId);
+        await Validate(group);
+        await ValidateOwnership(group!.Id);
 
-        var groupSecrets = await _secretRepository.Search(x => x.GroupId == group.Id);
-        var groupUsers = await _groupUserRepository.Search(x => x.GroupId == group.Id);
+        var groupSecrets = await _uow.Secrets.Where(x => x.GroupId == group.Id).ToListAsync();
+        var groupUsers = await _uow.GroupUsers.Where(x => x.GroupId == group.Id).ToListAsync();
 
-        await _uow.BeginTransaction();
+        await _uow.BeginTransactionAsync();
 
-        _secretRepository.RemoveRange(groupSecrets);
-        await _uow.SaveChanges();
+        _uow.Secrets.RemoveRange(groupSecrets);
+        await _uow.SaveChangesAsync();
 
-        _groupUserRepository.RemoveRange(groupUsers);
-        await _uow.SaveChanges();
-        
-        _groupRepository.Remove(group);
-        await _uow.SaveChanges();
-        
-        await _uow.Commit();
+        _uow.GroupUsers.RemoveRange(groupUsers);
+        await _uow.SaveChangesAsync();
+
+        _uow.Groups.Remove(group);
+        await _uow.SaveChangesAsync();
+
+        await _uow.CommitAsync();
     }
 
-    private async Task Validate(Group? group, Guid userId)
+    private async Task Validate(Group? group)
     {
         if (group is null)
             throw new GroupException("Group with given ID not found.");
 
-        var groupUser =
-            await _groupUserRepository.FirstOrDefault(x => x.GroupId == group.Id && x.UserId == userId);
+        var groupUser = await _uow.GroupUsers.FirstOrDefaultAsync(x =>
+            x.GroupId == group.Id && x.UserId == _userService.CurrentUserId);
 
         if (groupUser is null)
             throw new GroupPermissionException("User is not in group.");
     }
 
-    private async Task ValidateOwnership(Guid groupId, Guid userId)
+    private async Task ValidateOwnership(Guid groupId)
     {
-        var groupUser =
-            await _groupUserRepository.FirstOrDefault(x => x.GroupId == groupId && x.UserId == userId);
+        var groupUser = await _uow.GroupUsers.FirstOrDefaultAsync(x =>
+            x.GroupId == groupId && x.UserId == _userService.CurrentUserId);
 
         if (groupUser is null)
             throw new GroupPermissionException("User is not in group.");

@@ -3,13 +3,14 @@ using DbUp;
 
 var connectionString = args[0];
 
-EnsureDatabase.For.SqlDatabase(connectionString);
+EnsureDatabase.For.PostgresqlDatabase(connectionString);
             
 var upgrader = DeployChanges.To
-    .SqlDatabase(connectionString)
+    .PostgresqlDatabase(connectionString)
     .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly())
     .LogToConsole()
     .WithTransaction()
+    .WithVariablesDisabled()
     .Build();
 
 if (upgrader.IsUpgradeRequired())

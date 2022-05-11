@@ -1,37 +1,41 @@
-using Core.Data;
-using Core.Data.Repositories;
-using Core.Services.Interfaces;
+using System.Security.Claims;
+using Core.Interfaces;
 using Domain.Entities;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 
 namespace Core.Services;
 
 public class UserService : IUserService
 {
-    private readonly IUserRepository _userRepository;
-    private readonly ISecretRepository _secretRepository;
-    private readonly IGroupUserRepository _groupUserRepository;
     private readonly IUnitOfWork _uow;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public UserService(
-        IUserRepository userRepository,
-        ISecretRepository secretRepository,
-        IGroupUserRepository groupUserRepository,
-        IUnitOfWork uow)
+    public UserService(IUnitOfWork uow, IHttpContextAccessor httpContextAccessor)
     {
-        _userRepository = userRepository;
-        _secretRepository = secretRepository;
-        _groupUserRepository = groupUserRepository;
         _uow = uow;
+        _httpContextAccessor = httpContextAccessor;
     }
+
+    public bool IsAuthenticated => _httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated == true;
+
+    public Guid CurrentUserId =>
+        Guid.Parse(_httpContextAccessor.HttpContext!.User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+    public Task<User> GetCurrentUser() => Get(CurrentUserId);
 
     public async Task<User> Get(Guid id)
     {
-        var user = await _userRepository.Get(id);
+        var user = await _uow.Users.FindAsync(id);
 
-        var userSecrets = await _secretRepository.Search(x => x.UserId == id);
-        user.Secrets = userSecrets.ToList();
+        var userSecrets = await _uow.Secrets.Where(x => x.UserId == id).ToListAsync();
+        user!.Secrets = userSecrets.ToList();
 
-        var userGroups = await _groupUserRepository.SearchAndIncludeGroupSecrets(x => x.UserId == id);
+        var userGroups = await _uow.GroupUsers
+            .Include(x => x.Group!.Secrets)
+            .Where(x => x.UserId == id)
+            .ToListAsync();
+
         user.GroupUsers = userGroups;
 
         return user;
@@ -39,7 +43,7 @@ public class UserService : IUserService
 
     public async Task<User?> Get(string email, string masterPassword)
     {
-        var userKey = await _userRepository.GetUserKey(email);
+        var userKey = await _uow.Users.Where(x => x.Email == email).Select(x => x.Key).FirstOrDefaultAsync();
         if (userKey is null)
             return null;
 
@@ -47,8 +51,8 @@ public class UserService : IUserService
 
         var masterPasswordHash = Crypto.Crypto.GetMasterPasswordHash(masterPassword, salt);
 
-        return await _userRepository.FirstOrDefault(x =>
-            x.Email == email && x.MasterPasswordHash == masterPasswordHash);
+        return await _uow.Users
+            .FirstOrDefaultAsync(x => x.Email == email && x.MasterPasswordHash == masterPasswordHash);
     }
 
     public async Task CreateNewUser(string email, string name, string masterPassword)
@@ -65,8 +69,8 @@ public class UserService : IUserService
             Key = key
         };
 
-        _userRepository.Update(user);
+        _uow.Users.Update(user);
 
-        await _uow.SaveChanges();
+        await _uow.SaveChangesAsync();
     }
 }

@@ -1,10 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
-using Core.Data;
-using Core.Data.Repositories;
-using Core.Services.Interfaces;
+using Core.Interfaces;
 using Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Utilities;
@@ -14,23 +13,12 @@ namespace Core.Services;
 public class TokenService : ITokenService
 {
     private readonly IUnitOfWork _uow;
-    private readonly IRefreshTokenRepository _refreshTokenRepository;
-    private readonly IUserRepository _userRepository;
-    private readonly IConfiguration _configuration;
     private readonly TokenValidationParameters _tokenValidationParameters;
 
-    public TokenService(
-        IUnitOfWork uow,
-        IRefreshTokenRepository refreshTokenRepository,
-        IUserRepository userRepository,
-        IConfiguration configuration,
-        TokenValidationParameters tokenValidationParameters)
+    public TokenService(IUnitOfWork uow, TokenValidationParameters tokenValidationParameters)
     {
         _uow = uow;
-        _refreshTokenRepository = refreshTokenRepository;
-        _userRepository = userRepository;
         _tokenValidationParameters = tokenValidationParameters;
-        _configuration = configuration;
     }
 
     public JwtSecurityToken GenerateJwtSecurityToken(User user)
@@ -45,7 +33,7 @@ public class TokenService : ITokenService
                 new(JwtRegisteredClaimNames.NameId, user.Id.ToString()),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             },
-            expires: DateTime.Now.Add(_configuration.GetValue<TimeSpan>(ConfigurationKeys.JWT_TOKEN_LIFETIME)),
+            expires: DateTime.Now.Add(AppData.Configuration.GetValue<TimeSpan>(CK.JWT_TOKEN_LIFETIME)),
             signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha512)
         );
     }
@@ -54,7 +42,8 @@ public class TokenService : ITokenService
     {
         var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
 
-        while (await _refreshTokenRepository.Exists(token))
+        
+        while (await _uow.RefreshTokens.AnyAsync(x => x.Token == token))
         {
             token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
         }
@@ -70,9 +59,9 @@ public class TokenService : ITokenService
             Token = token
         };
 
-        _refreshTokenRepository.Update(refreshToken);
+        _uow.RefreshTokens.Update(refreshToken);
 
-        await _uow.SaveChanges();
+        await _uow.SaveChangesAsync();
 
         return refreshToken;
     }
@@ -104,7 +93,7 @@ public class TokenService : ITokenService
                 throw new Exception("This token hasn't expired yet.");
             }
 
-            var storedRefreshToken = await _refreshTokenRepository.FirstOrDefault(x => x.Token == refreshToken);
+            var storedRefreshToken = await _uow.RefreshTokens.FirstOrDefaultAsync(x => x.Token == refreshToken);
             if (storedRefreshToken is null)
                 throw new Exception("Token does not exist.");
 
@@ -119,12 +108,12 @@ public class TokenService : ITokenService
                 throw new Exception("Token does not match JWT.");
 
             storedRefreshToken.IsUsed = true;
-            _refreshTokenRepository.Update(storedRefreshToken);
-            await _uow.SaveChanges();
+            _uow.RefreshTokens.Update(storedRefreshToken);
+            await _uow.SaveChangesAsync();
 
-            var user = await _userRepository.Get(storedRefreshToken.UserId);
+            var user = await _uow.Users.FindAsync(storedRefreshToken.UserId);
 
-            return GenerateJwtSecurityToken(user);
+            return GenerateJwtSecurityToken(user!);
         }
         catch (Exception) { }
 

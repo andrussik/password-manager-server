@@ -1,7 +1,9 @@
 ﻿using Domain.Entities.Base;
+using Microsoft.EntityFrameworkCore;
 
 namespace Domain.Entities;
 
+[Index(nameof(Email), IsUnique = true)]
 public class User : SecretOwner
 {
     public string Name { get; set; } = default!;

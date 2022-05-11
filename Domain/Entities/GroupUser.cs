@@ -16,4 +16,6 @@ public class GroupUser : Entity
     public bool WriteAllowed() => GroupRoleId == GroupRole.Owner.Id
                                   || GroupRoleId == GroupRole.Admin.Id
                                   || GroupRoleId == GroupRole.Writer.Id;
+
+    public bool UpdateNameAllowed() => WriteAllowed();
 }

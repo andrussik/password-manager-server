@@ -1,56 +1,74 @@
-using Core.Data;
-using Core.Data.Repositories;
-using Core.Services.Interfaces;
+using Core.Dtos;
+using Core.Interfaces;
+using Core.Mappers;
 using Domain.Entities;
 using Domain.Exceptions;
+using Microsoft.EntityFrameworkCore;
+using Utilities;
 
 namespace Core.Services;
 
 public class SecretService : ISecretService
 {
-    private readonly ISecretRepository _secretRepository;
-    private readonly IGroupUserRepository _groupUserRepository;
     private readonly IUnitOfWork _uow;
+    private readonly IUserService _userService;
 
-    public SecretService(ISecretRepository secretRepository, IGroupUserRepository groupUserRepository, IUnitOfWork uow)
+    public SecretService(IUnitOfWork uow, IUserService userService)
     {
-        _secretRepository = secretRepository;
-        _groupUserRepository = groupUserRepository;
         _uow = uow;
+        _userService = userService;
     }
 
-    public async Task<Secret> Save(Secret secret, Guid userId)
+    public Task<Secret> Create(SecretDto secretDto) => Save(SecretsMapper.Map(secretDto));
+
+    public Task<Secret> Update(Guid id, SecretDto secretDto)
+    {
+        var existingSecret = _uow.Secrets.FirstOrDefault(x => x.Id == id);
+        
+        if (existingSecret is null)
+            throw new SecretException(RK.ERR_MSG_ENTITY_NOT_FOUND);
+        
+        var secret = SecretsMapper.Map(secretDto);
+        secret.Id = id;
+
+        return Save(existingSecret);
+    }
+
+    public async Task<Secret> Save(Secret secret)
     {
         secret.Validate();
-        
-        await ValidateWriting(secret, userId);
 
-        _secretRepository.Update(secret);
+        await ValidateWriting(secret);
 
-        await _uow.SaveChanges();
+        _uow.Secrets.Update(secret);
+
+        await _uow.SaveChangesAsync();
 
         return secret;
     }
 
-    public async Task Delete(Guid id, Guid userId)
+    public async Task Delete(Guid id)
     {
-        var secret = await _secretRepository.Get(id);
+        var secret = await _uow.Secrets.FindAsync(id);
 
-        await ValidateWriting(secret, userId);
+        if (secret is null)
+            throw new SecretException(RK.ERR_MSG_ENTITY_NOT_FOUND);
 
-        _secretRepository.Remove(secret);
+        await ValidateWriting(secret);
 
-        await _uow.SaveChanges();
+        _uow.Secrets.Remove(secret);
+
+        await _uow.SaveChangesAsync();
     }
 
-    private async Task ValidateWriting(Secret secret, Guid userId)
+    private async Task ValidateWriting(Secret secret)
     {
         if (secret.UserId is not null)
-            secret.ValidateOwnership(userId);
+            secret.ValidateOwnership(_userService.CurrentUserId);
         else
         {
-            var groupUser =
-                await _groupUserRepository.FirstOrDefault(x => x.UserId == userId && x.GroupId == secret.GroupId);
+            var groupUser = await _uow.GroupUsers.FirstOrDefaultAsync(x => 
+                    x.UserId == _userService.CurrentUserId && x.GroupId == secret.GroupId);
 
             if (groupUser is null)
                 throw new SecretPermissionException("User does not belong to group.");

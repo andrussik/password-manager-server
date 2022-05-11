@@ -11,6 +11,7 @@ public class Secret : Entity
     
     [MaxLength(1024)]
     public string? Username { get; set; }
+    
     public string? Password { get; set; }
     public string? Description { get; set; }
     
